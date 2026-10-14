@@ -7,12 +7,12 @@
   <style>
     :root {
       --bg: #f6f7f9; --panel: #ffffff; --text: #1d2129; --muted: #6b7280;
-      --user: #2563eb; --user-text: #ffffff; --bot: #eef0f3; --border: #e5e7eb;
+      --user: #2563eb; --user-text: #ffffff; --bot: #eef0f3; --border: #e5e7eb; --code: #dfe2e7;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #111318; --panel: #1a1d24; --text: #e6e8eb; --muted: #9aa1ab;
-        --user: #3b82f6; --user-text: #ffffff; --bot: #252a33; --border: #2c313b;
+        --user: #3b82f6; --user-text: #ffffff; --bot: #252a33; --border: #2c313b; --code: #1a1d24;
       }
     }
     * { box-sizing: border-box; }
@@ -33,9 +33,22 @@
       border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px;
     }
     #messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.55; word-break: break-word; }
+    .msg.user, .msg.error { white-space: pre-wrap; }
     .msg.user { align-self: flex-end; background: var(--user); color: var(--user-text); border-bottom-right-radius: 4px; }
     .msg.assistant { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
+    .msg.assistant > :first-child { margin-top: 0; }
+    .msg.assistant > :last-child { margin-bottom: 0; }
+    .msg.assistant p, .msg.assistant ul, .msg.assistant ol, .msg.assistant pre, .msg.assistant blockquote { margin: 0 0 10px; }
+    .msg.assistant ul, .msg.assistant ol { padding-left: 20px; }
+    .msg.assistant h1, .msg.assistant h2, .msg.assistant h3 { font-size: 1.05em; margin: 12px 0 6px; }
+    .msg.assistant code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+    .msg.assistant pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
+    .msg.assistant pre code { background: none; padding: 0; }
+    .msg.assistant blockquote { border-left: 3px solid var(--border); padding-left: 10px; color: var(--muted); }
+    .msg.assistant a { color: var(--user); }
+    .msg.assistant table { border-collapse: collapse; margin: 0 0 10px; }
+    .msg.assistant th, .msg.assistant td { border: 1px solid var(--border); padding: 4px 8px; }
     .msg.error { align-self: center; color: #dc2626; font-size: 14px; background: none; }
     .empty { margin: auto; color: var(--muted); text-align: center; }
     form { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--panel); }
@@ -58,17 +71,30 @@
     </header>
     <div id="messages"><div class="empty">무엇이든 물어보세요.</div></div>
     <form id="form">
-      <textarea id="input" rows="1" placeholder="메시지를 입력하세요 (Shift+Enter 줄바꿈)"></textarea>
+      <textarea id="input" rows="1" placeholder="메시지를 입력하세요"></textarea>
       <button id="send" type="submit">전송</button>
     </form>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
     const $messages = document.getElementById('messages');
     const $form = document.getElementById('form');
     const $input = document.getElementById('input');
     const $send = document.getElementById('send');
     let history = [];
+
+    // 답변은 마크다운 → 안전한 HTML로 표시 (CDN 로드 실패 시 일반 텍스트)
+    function render(el, text) {
+      if (window.marked && window.DOMPurify) {
+        el.innerHTML = DOMPurify.sanitize(marked.parse(text, { breaks: true }));
+        el.querySelectorAll('a').forEach((a) => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+      } else {
+        el.style.whiteSpace = 'pre-wrap';
+        el.textContent = text;
+      }
+    }
 
     function addBubble(role, text) {
       document.querySelector('.empty')?.remove();
@@ -104,7 +130,7 @@
           const { done, value } = await reader.read();
           if (done) break;
           answer += decoder.decode(value, { stream: true });
-          bubble.textContent = answer;
+          render(bubble, answer);
           $messages.scrollTop = $messages.scrollHeight;
         }
         if (!answer) throw new Error('응답이 비어 있습니다.');

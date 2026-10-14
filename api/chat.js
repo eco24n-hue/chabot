@@ -11,7 +11,8 @@ export default async function handler(req) {
     return json({ error: 'Method not allowed' }, 405);
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  // Vercel/OpenRouter 연동에 따라 키 이름이 다를 수 있어 두 가지 모두 허용
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_API_key;
   if (!apiKey) {
     return json({ error: 'OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.' }, 500);
   }

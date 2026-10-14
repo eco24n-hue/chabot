@@ -15,7 +15,7 @@ API 키는 서버 함수에서만 사용되며 브라우저에 노출되지 않�
 
 | 이름 | 필수 | 설명 |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | ✅ | OpenRouter API 키 |
+| `OPENROUTER_API_KEY` | ✅ | OpenRouter API 키 (`openrouter_API_key` 이름도 인식) |
 | `OPENROUTER_MODEL` | | 사용할 모델 (기본값 `openrouter/auto`, 예: `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4`) |
 | `SYSTEM_PROMPT` | | 시스템 프롬프트 (기본값: 친절한 한국어 어시스턴트) |
 
